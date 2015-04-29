@@ -13,32 +13,33 @@ import org.jcodec.api.FrameGrab;
 import org.jcodec.api.JCodecException;
 
 public class Launcher {
-	static final int RED_CHANNEL = 0;
-	static final int GREEN_CHANNEL = 1;
-	static final int BLUE_CHANNEL = 2;
+
+	static BlendMethod method;
 
 	public static void main(String[] args) {
+		
+		method = new MaxMethod();
+		
 		long startingTime = System.currentTimeMillis();
 		File videoFile = new File("test.mp4");
 		BufferedImage frame;
 		try {
 			frame = FrameGrab.getFrame(videoFile, 0);
-			
+
 			int w = frame.getWidth();
 			int h = frame.getHeight();
 			int[][][] pixels = new int[w][][];
-			
+
 			for (int x = 0; x < w; x++) {
 				pixels[x] = new int[h][];
 				for (int y = 0; y < h; y++) {
 					pixels[x][y] = new int[3];
-					pixels[x][y][RED_CHANNEL] = 0;
-					pixels[x][y][GREEN_CHANNEL] = 0;
-					pixels[x][y][BLUE_CHANNEL] = 0;
+					method.initialize();
 				}
 			}
 
 			int frameNb;
+			int[] pixel;
 			// For each frame
 			for (frameNb = 0; true; frameNb++) { 
 				System.out.println("Sampling frame " + frameNb);
@@ -48,9 +49,8 @@ public class Launcher {
 					// Adding sample
 					for (int x = 0; x < w; x++) {
 						for (int y = 0; y < h; y++) {
-							pixels[x][y][RED_CHANNEL] += image.getSample(RED_CHANNEL, x, y);
-							pixels[x][y][GREEN_CHANNEL] += image.getSample(GREEN_CHANNEL, x, y);
-							pixels[x][y][BLUE_CHANNEL] += image.getSample(BLUE_CHANNEL, x, y);
+							pixel = new int[]{image.getSample(0, x, y), image.getSample(1, x, y), image.getSample(2, x, y)};
+							method.iterate(frameNb, pixels[x][y], pixel);
 						}
 					}
 				} catch (IOException | JCodecException e) {
@@ -60,19 +60,15 @@ public class Launcher {
 					break;
 				}
 			}
-			
+
 			BufferedRGB24Image out = new BufferedRGB24Image(new BufferedImage(frame.getWidth(), frame.getHeight(), frame.getType()));
-			
-			System.out.println("Computing average");
-			// Saving average
+
 			for (int x = 0; x < w; x++) {
 				for (int y = 0; y < h; y++) {
-					out.putSample(RED_CHANNEL, x, y, pixels[x][y][RED_CHANNEL] / frameNb); // Red
-					out.putSample(GREEN_CHANNEL, x, y, pixels[x][y][GREEN_CHANNEL] / frameNb); // Green
-					out.putSample(BLUE_CHANNEL, x, y, pixels[x][y][BLUE_CHANNEL] / frameNb); // Blue
+					method.finish(frameNb, pixels[x][y]);
 				}
 			}
-			
+
 			PNGCodec codec = new PNGCodec();
 			try {
 				System.out.println("Saving result");
