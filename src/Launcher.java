@@ -30,75 +30,56 @@ public class Launcher {
 		int frameNb;
 		File videoFile = new File("test.mp4");
 		BufferedImage frame;
-
-		for (frameNb = 0; frameNb < 8; frameNb++) { 
-			System.out.println("Computing frame " + frameNb);
-			try {
-				frame = FrameGrab.getFrame(videoFile, frameNb);
-				ImageIO.write(frame, ext, new File(path + name + frameNb + "." + ext));
-			} catch (IOException | JCodecException e) {
-				System.out.println("Something went wrong :/");
-				e.printStackTrace();
-			} catch (ArrayIndexOutOfBoundsException e) {
-				break;
-			}
-		}
-		System.out.println("Finished extracting " + frameNb + " frames in " + (System.currentTimeMillis() - time)+" milliseconds");
-
-		BufferedImage frame2;
+		BufferedRGB24Image image;
 		try {
-			frame2 = FrameGrab.getFrame(videoFile, 0);
-			int w = frame2.getWidth();
-			int h = frame2.getHeight();
-
-			HashMap<String, Integer> pixels = new HashMap<String, Integer>(frameNb*w*h);
-
-			frame = FrameGrab.getFrame(videoFile, frameNb);
+			frame = FrameGrab.getFrame(videoFile, 0);
 			
-			System.out.println("Loading all frames");
-
-			// Storing all frames
-			for (int i = 0; i < frameNb; i++) {
-				BufferedRGB24Image image = new BufferedRGB24Image(ImageIO.read(new File(path + name + i + "." + ext)));
-				System.out.println("Loading frame " + i);
-				for (int x = 0; x < w; x++) {
-					for (int y = 0; y < h; y++) {
-						int channels = 256*256*image.getSample(0, x, y) + 256*image.getSample(1, x, y) + image.getSample(2, x, y);
-						pixels.put(i + "," + x + "," + y, channels);
-					}
+			int w = frame.getWidth();
+			int h = frame.getHeight();
+			int[][][] pixels = new int[w][][];
+			
+			for (int x = 0; x < w; x++) {
+				pixels[x] = new int[h][];
+				for (int y = 0; y < h; y++) {
+					pixels[x][y] = new int[3];
+					pixels[x][y][0] = 0;
+					pixels[x][y][1] = 0;
+					pixels[x][y][2] = 0;
 				}
 			}
-			
-			System.out.println("Computing final frames");
+
+			// For each frame
+			for (frameNb = 0; frameNb < 2; frameNb++) { 
+				System.out.println("Computing frame " + frameNb);
+				try {
+					image = new BufferedRGB24Image(FrameGrab.getFrame(videoFile, frameNb));
+					// Adding sample
+					for (int x = 0; x < w; x++) {
+						for (int y = 0; y < h; y++) {
+							pixels[x][y][0] += image.getSample(0, x, y);
+							pixels[x][y][1] += image.getSample(1, x, y);
+							pixels[x][y][2] += image.getSample(2, x, y);
+						}
+					}
+				} catch (IOException | JCodecException e) {
+					System.out.println("Something went wrong :/");
+					e.printStackTrace();
+				} catch (ArrayIndexOutOfBoundsException e) {
+					break;
+				}
+			}
 			
 			BufferedRGB24Image out = new BufferedRGB24Image(new BufferedImage(frame.getWidth(), frame.getHeight(), frame.getType()));
 			
-			// Computing final frame
-			int c1 = 0;
-			int c2 = 0;
-			int c3 = 0;
-			int channels;
+			// Saving average
 			for (int x = 0; x < w; x++) {
-				System.out.println("x : " + x);
 				for (int y = 0; y < h; y++) {
-					c1 = 0;
-					c2 = 0;
-					c3 = 0;
-					for (int i = 0; i < frameNb; i++) {
-						channels = pixels.get(i + "," + x + "," + y);
-						c1 += (channels/256/256)%256;
-						c2 += (channels/256)%256;
-						c3 += channels%256;
-					}
-					c1 /= frameNb;
-					c2 /= frameNb;
-					c3 /= frameNb;
-					out.putSample(0, x, y, c1); // Red
-					out.putSample(1, x, y, c2); // Green
-					out.putSample(2, x, y, c3); // Blue
+					out.putSample(0, x, y, pixels[x][y][0] / frameNb); // Red
+					out.putSample(1, x, y, pixels[x][y][1] / frameNb); // Green
+					out.putSample(2, x, y, pixels[x][y][2] / frameNb); // Blue
 				}
 			}
-
+			
 			PNGCodec codec = new PNGCodec();
 			try {
 				codec.setFile("out.png", CodecMode.SAVE);
@@ -115,13 +96,9 @@ public class Launcher {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
-		} catch (IOException e2) {
+		} catch (JCodecException e1) {
 			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (JCodecException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
+			e1.printStackTrace();
 		}
 
 	}
