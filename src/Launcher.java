@@ -14,11 +14,12 @@ import org.jcodec.api.JCodecException;
 
 public class Launcher {
 
-	static BlendMethod method;
+	static BlendMethod[] methods;
 
 	public static void main(String[] args) {
 		
-		method = new AverageMethod();
+		methods = new BlendMethod[]{new AverageMethod(), new MinMethod(), new MaxMethod()};
+		int methodsL = methods.length;
 		
 		long startingTime = System.currentTimeMillis();
 		File videoFile = new File("test.mp4");
@@ -28,13 +29,16 @@ public class Launcher {
 
 			int w = frame.getWidth();
 			int h = frame.getHeight();
-			int[][][] pixels = new int[w][][];
+			int[][][][] pixels = new int[w][][][];
 
 			for (int x = 0; x < w; x++) {
-				pixels[x] = new int[h][];
+				pixels[x] = new int[h][][];
 				for (int y = 0; y < h; y++) {
-					pixels[x][y] = new int[3];
-					pixels[x][y] = method.initialize();
+					pixels[x][y] = new int[methodsL][];
+					for (int methodNb = 0; methodNb < methodsL; methodNb++) {
+						pixels[x][y][methodNb] = new int[3];
+						pixels[x][y][methodNb] = methods[methodNb].initialize();
+					}
 				}
 			}
 
@@ -50,7 +54,9 @@ public class Launcher {
 					for (int x = 0; x < w; x++) {
 						for (int y = 0; y < h; y++) {
 							pixel = new int[]{image.getSample(0, x, y), image.getSample(1, x, y), image.getSample(2, x, y)};
-							pixels[x][y] = method.iterate(frameNb, pixels[x][y], pixel);
+							for (int methodNb = 0; methodNb < methodsL; methodNb++) {
+								pixels[x][y][methodNb] = methods[methodNb].iterate(frameNb, pixels[x][y][methodNb], pixel);
+							}
 						}
 					}
 				} catch (IOException | JCodecException e) {
@@ -61,31 +67,39 @@ public class Launcher {
 				}
 			}
 
-			BufferedRGB24Image out = new BufferedRGB24Image(new BufferedImage(frame.getWidth(), frame.getHeight(), frame.getType()));
-
+			BufferedRGB24Image[] out = new BufferedRGB24Image[methodsL];
+			for (int methodNb = 0; methodNb < methodsL; methodNb++) {
+				out[methodNb] = new BufferedRGB24Image(new BufferedImage(frame.getWidth(), frame.getHeight(), frame.getType()));
+			}
 			for (int x = 0; x < w; x++) {
 				for (int y = 0; y < h; y++) {
-					pixel = method.finish(frameNb, pixels[x][y]);
-					out.putSample(0, x, y, pixel[0]);
-					out.putSample(1, x, y, pixel[1]);
-					out.putSample(2, x, y, pixel[2]);
+					for (int methodNb = 0; methodNb < methodsL; methodNb++) {
+						pixel = methods[methodNb].finish(frameNb, pixels[x][y][methodNb]);
+						out[methodNb].putSample(0, x, y, pixel[0]);
+						out[methodNb].putSample(1, x, y, pixel[1]);
+						out[methodNb].putSample(2, x, y, pixel[2]);
+					}
 				}
 			}
+			
+			// TODO from now
 
+			System.out.println("Saving result");
 			PNGCodec codec = new PNGCodec();
 			try {
-				System.out.println("Saving result");
-				codec.setFile("out.png", CodecMode.SAVE);
-				codec.setImage(out);
-				codec.setCompressionLevel(Deflater.BEST_COMPRESSION);
-				try {
-					codec.process();
-					long endingTime = System.currentTimeMillis();
-					System.out.println("Finished");
-					System.out.println("Total time : " + (endingTime - startingTime)/1000 + " seconds");
-				} catch (OperationFailedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				for (int methodNb = 0; methodNb < methodsL; methodNb++) {
+					codec.setFile("out_" + methods[methodNb].getName() + ".png", CodecMode.SAVE);
+					codec.setImage(out[methodNb]);
+					codec.setCompressionLevel(Deflater.BEST_COMPRESSION);
+					try {
+						codec.process();
+						long endingTime = System.currentTimeMillis();
+						System.out.println("Finished");
+						System.out.println("Total time : " + (endingTime - startingTime)/1000 + " seconds");
+					} catch (OperationFailedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 			} catch (UnsupportedCodecModeException | IOException e) {
 				// TODO Auto-generated catch block

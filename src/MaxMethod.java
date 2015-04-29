@@ -19,4 +19,8 @@ public class MaxMethod implements BlendMethod {
 		return finalIteration;
 	}
 
+	@Override
+	public String getName() {
+		return "max";
+	}
 }

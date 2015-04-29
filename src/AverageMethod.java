@@ -22,4 +22,9 @@ public class AverageMethod implements BlendMethod {
 		return finalIteration;
 	}
 
+	@Override
+	public String getName() {
+		return "avg";
+	}
+
 }

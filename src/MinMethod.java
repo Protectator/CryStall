@@ -19,4 +19,8 @@ public class MinMethod implements BlendMethod {
 		return finalIteration;
 	}
 
+	@Override
+	public String getName() {
+		return "min";
+	}
 }
