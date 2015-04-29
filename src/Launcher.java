@@ -31,7 +31,7 @@ public class Launcher {
 		File videoFile = new File("test.mp4");
 		BufferedImage frame;
 
-		for (frameNb = 0; frameNb < 2; frameNb++) { 
+		for (frameNb = 0; frameNb < 8; frameNb++) { 
 			System.out.println("Computing frame " + frameNb);
 			try {
 				frame = FrameGrab.getFrame(videoFile, frameNb);
@@ -51,23 +51,20 @@ public class Launcher {
 			int w = frame2.getWidth();
 			int h = frame2.getHeight();
 
-			HashMap<String, Integer> pixels = new HashMap<String, Integer>(frameNb*w*h*3);
-			HashMap<String, Integer> finalFrame = new HashMap<String, Integer>(w*h*3);
+			HashMap<String, Integer> pixels = new HashMap<String, Integer>(frameNb*w*h);
 
 			frame = FrameGrab.getFrame(videoFile, frameNb);
 			
-			System.out.println("Storing all frames");
+			System.out.println("Loading all frames");
 
 			// Storing all frames
 			for (int i = 0; i < frameNb; i++) {
-				BufferedImage bufferedImage = ImageIO.read(new File(path + name + i + "." + ext));
-				BufferedRGB24Image image = new BufferedRGB24Image(bufferedImage);
-				
+				BufferedRGB24Image image = new BufferedRGB24Image(ImageIO.read(new File(path + name + i + "." + ext)));
+				System.out.println("Loading frame " + i);
 				for (int x = 0; x < w; x++) {
 					for (int y = 0; y < h; y++) {
-						pixels.put(i + "," + x + "," + y + "," + 0, image.getSample(0, x, y));
-						pixels.put(i + "," + x + "," + y + "," + 1, image.getSample(1, x, y));
-						pixels.put(i + "," + x + "," + y + "," + 2, image.getSample(2, x, y));
+						int channels = 256*256*image.getSample(0, x, y) + 256*image.getSample(1, x, y) + image.getSample(2, x, y);
+						pixels.put(i + "," + x + "," + y, channels);
 					}
 				}
 			}
@@ -77,16 +74,21 @@ public class Launcher {
 			BufferedRGB24Image out = new BufferedRGB24Image(new BufferedImage(frame.getWidth(), frame.getHeight(), frame.getType()));
 			
 			// Computing final frame
+			int c1 = 0;
+			int c2 = 0;
+			int c3 = 0;
+			int channels;
 			for (int x = 0; x < w; x++) {
 				System.out.println("x : " + x);
 				for (int y = 0; y < h; y++) {
-					int c1 = 0;
-					int c2 = 0;
-					int c3 = 0;
+					c1 = 0;
+					c2 = 0;
+					c3 = 0;
 					for (int i = 0; i < frameNb; i++) {
-						c1 += pixels.get(i + "," + x + "," + y + "," + 0);
-						c2 += pixels.get(i + "," + x + "," + y + "," + 1);
-						c3 += pixels.get(i + "," + x + "," + y + "," + 2);
+						channels = pixels.get(i + "," + x + "," + y);
+						c1 += (channels/256/256)%256;
+						c2 += (channels/256)%256;
+						c3 += channels%256;
 					}
 					c1 /= frameNb;
 					c2 /= frameNb;
