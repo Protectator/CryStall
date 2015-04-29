@@ -18,7 +18,7 @@ public class Launcher {
 
 	public static void main(String[] args) {
 		
-		method = new MaxMethod();
+		method = new AverageMethod();
 		
 		long startingTime = System.currentTimeMillis();
 		File videoFile = new File("test.mp4");
@@ -34,7 +34,7 @@ public class Launcher {
 				pixels[x] = new int[h][];
 				for (int y = 0; y < h; y++) {
 					pixels[x][y] = new int[3];
-					method.initialize();
+					pixels[x][y] = method.initialize();
 				}
 			}
 
@@ -50,7 +50,7 @@ public class Launcher {
 					for (int x = 0; x < w; x++) {
 						for (int y = 0; y < h; y++) {
 							pixel = new int[]{image.getSample(0, x, y), image.getSample(1, x, y), image.getSample(2, x, y)};
-							method.iterate(frameNb, pixels[x][y], pixel);
+							pixels[x][y] = method.iterate(frameNb, pixels[x][y], pixel);
 						}
 					}
 				} catch (IOException | JCodecException e) {
@@ -65,7 +65,10 @@ public class Launcher {
 
 			for (int x = 0; x < w; x++) {
 				for (int y = 0; y < h; y++) {
-					method.finish(frameNb, pixels[x][y]);
+					pixel = method.finish(frameNb, pixels[x][y]);
+					out.putSample(0, x, y, pixel[0]);
+					out.putSample(1, x, y, pixel[1]);
+					out.putSample(2, x, y, pixel[2]);
 				}
 			}
 
