@@ -96,7 +96,7 @@ public class Launcher {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		} catch (JCodecException e1) {
+		} catch (IOException | JCodecException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
