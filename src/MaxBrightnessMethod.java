@@ -1,5 +1,5 @@
 
-public class MaxMethod implements BlendMethod {
+public class MaxBrightnessMethod implements BlendMethod {
 
 	@Override
 	public int[] initialize() {
@@ -8,8 +8,8 @@ public class MaxMethod implements BlendMethod {
 
 	@Override
 	public int[] iterate(int step, int[] lastIteration, int[] newPixel) {
-		for (int channel = 0; channel < lastIteration.length; channel++) {
-			lastIteration[channel] = Math.max(lastIteration[channel], newPixel[channel]);
+		if (brightness(newPixel) >= brightness(lastIteration)) {
+			return newPixel;
 		}
 		return lastIteration;
 	}
@@ -21,6 +21,14 @@ public class MaxMethod implements BlendMethod {
 
 	@Override
 	public String getName() {
-		return "max";
+		return "maxBrightness";
+	}
+	
+	public int brightness(int[] channels) {
+		int brightness = 0;
+		for (int value : channels) {
+			brightness += value;
+		}
+		return brightness/channels.length;
 	}
 }

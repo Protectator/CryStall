@@ -1,5 +1,5 @@
 
-public class MinMethod implements BlendMethod {
+public class AdditiveMinChannelMethod implements BlendMethod {
 
 	@Override
 	public int[] initialize() {

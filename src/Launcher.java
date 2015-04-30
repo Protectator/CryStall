@@ -18,7 +18,7 @@ public class Launcher {
 
 	public static void main(String[] args) {
 		
-		methods = new BlendMethod[]{new AverageMethod(), new MinMethod(), new MaxMethod()};
+		methods = new BlendMethod[]{new AverageMethod(), new AdditiveMinChannelMethod(), new AdditiveMaxChannelMethod()};
 		int methodsL = methods.length;
 		
 		long startingTime = System.currentTimeMillis();
@@ -45,9 +45,9 @@ public class Launcher {
 			int frameNb;
 			int[] pixel;
 			// For each frame
+			BufferedRGB24Image image;
 			for (frameNb = 0; true; frameNb++) { 
 				System.out.println("Sampling frame " + frameNb);
-				BufferedRGB24Image image;
 				try {
 					image = new BufferedRGB24Image(FrameGrab.getFrame(videoFile, frameNb));
 					// Adding sample
