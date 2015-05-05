@@ -1,6 +1,7 @@
 package ch.protectator.crystall;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.zip.Deflater;
 
@@ -19,10 +20,25 @@ public class Launcher {
 
 	public static void main(String[] args) {
 		
+		if (args.length < 1) {
+			System.out.println("You must provide an input video file as argument");
+			System.exit(1);
+		}
+		
 		long startingTime = System.currentTimeMillis();
-		File videoFile = new File("input.mp4");
+		File videoFile = new File(args[0]);
 		BufferedImage frame;
 		try {
+			try {
+				FrameGrab.getFrame(videoFile, 0);
+			} catch (ArithmeticException | NullPointerException e) {
+				System.out.println("Input format not supported");
+				System.exit(1);
+			} catch (FileNotFoundException e) {
+				System.out.println("File not found");
+				System.exit(1);
+			}
+			
 			frame = FrameGrab.getFrame(videoFile, 0);
 
 			int w = frame.getWidth();
