@@ -1,3 +1,4 @@
+package ch.protectator.crystall;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -18,47 +19,36 @@ public class Launcher {
 
 	public static void main(String[] args) {
 		
-		methods = new BlendMethod[]{new AverageMethod(), new AdditiveMinChannelMethod(), new AdditiveMaxChannelMethod()};
-		int methodsL = methods.length;
-		
 		long startingTime = System.currentTimeMillis();
-		File videoFile = new File("test.mp4");
+		File videoFile = new File("input.mp4");
 		BufferedImage frame;
 		try {
 			frame = FrameGrab.getFrame(videoFile, 0);
 
 			int w = frame.getWidth();
 			int h = frame.getHeight();
-			int[][][][] pixels = new int[w][][][];
-
-			for (int x = 0; x < w; x++) {
-				pixels[x] = new int[h][][];
-				for (int y = 0; y < h; y++) {
-					pixels[x][y] = new int[methodsL][];
-					for (int methodNb = 0; methodNb < methodsL; methodNb++) {
-						pixels[x][y][methodNb] = new int[3];
-						pixels[x][y][methodNb] = methods[methodNb].initialize();
-					}
-				}
-			}
-
+			int type = frame.getType();
+			
+			methods = new BlendMethod[]{new AverageMethod(3, w, h, type),
+					new AdditiveMinChannelMethod(3, w, h, type),
+					new AdditiveMaxChannelMethod(3, w, h, type),
+					new MaxBrightnessMethod(3, w, h, type),
+					new MostExtremeChannelMethod(3, w, h, type)};
+			int methodsL = methods.length;
 			int frameNb;
-			int[] pixel;
 			// For each frame
 			BufferedRGB24Image image;
-			for (frameNb = 0; true; frameNb++) { 
+			for (frameNb = 0; frameNb<10; frameNb++) { 
 				System.out.println("Sampling frame " + frameNb);
 				try {
 					image = new BufferedRGB24Image(FrameGrab.getFrame(videoFile, frameNb));
-					// Adding sample
-					for (int x = 0; x < w; x++) {
-						for (int y = 0; y < h; y++) {
-							pixel = new int[]{image.getSample(0, x, y), image.getSample(1, x, y), image.getSample(2, x, y)};
-							for (int methodNb = 0; methodNb < methodsL; methodNb++) {
-								pixels[x][y][methodNb] = methods[methodNb].iterate(frameNb, pixels[x][y][methodNb], pixel);
-							}
-						}
+					System.out.print("Computing method ");
+					for (int method = 0; method < methodsL; method++) {
+						System.out.print(methods[method].getName() + "... ");
+						methods[method].iterate(image);
 					}
+					System.out.println();
+					
 				} catch (IOException | JCodecException e) {
 					System.out.println("Something went wrong :/");
 					e.printStackTrace();
@@ -68,28 +58,16 @@ public class Launcher {
 			}
 
 			BufferedRGB24Image[] out = new BufferedRGB24Image[methodsL];
-			for (int methodNb = 0; methodNb < methodsL; methodNb++) {
-				out[methodNb] = new BufferedRGB24Image(new BufferedImage(frame.getWidth(), frame.getHeight(), frame.getType()));
+			for (int method = 0; method < methodsL; method++) {
+				out[method] = methods[method].getPixels();
 			}
-			for (int x = 0; x < w; x++) {
-				for (int y = 0; y < h; y++) {
-					for (int methodNb = 0; methodNb < methodsL; methodNb++) {
-						pixel = methods[methodNb].finish(frameNb, pixels[x][y][methodNb]);
-						out[methodNb].putSample(0, x, y, pixel[0]);
-						out[methodNb].putSample(1, x, y, pixel[1]);
-						out[methodNb].putSample(2, x, y, pixel[2]);
-					}
-				}
-			}
-			
-			// TODO from now
 
 			System.out.println("Saving result");
 			PNGCodec codec = new PNGCodec();
 			try {
-				for (int methodNb = 0; methodNb < methodsL; methodNb++) {
-					codec.setFile("out_" + methods[methodNb].getName() + ".png", CodecMode.SAVE);
-					codec.setImage(out[methodNb]);
+				for (int method = 0; method < methodsL; method++) {
+					codec.setFile("out_" + methods[method].getName() + ".png", CodecMode.SAVE);
+					codec.setImage(out[method]);
 					codec.setCompressionLevel(Deflater.BEST_COMPRESSION);
 					try {
 						codec.process();
