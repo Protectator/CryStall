@@ -9,5 +9,7 @@ Different methods of blending can be used to produce a variety of effects on the
 ## Usage
 `java -jar crystall.jar exmapleFile.mp4`
 
+It will create 5 .png files in that folder, each corresponding to one of the implemented method.
+
 ## Use short video files
 The process is actually **EXTREMELY SLOW**.
