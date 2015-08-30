@@ -54,7 +54,7 @@ public class Launcher {
 			int frameNb;
 			// For each frame
 			BufferedRGB24Image image;
-			for (frameNb = 0; frameNb<10; frameNb++) { 
+			for (frameNb = 0; true; frameNb++) { 
 				System.out.println("Sampling frame " + frameNb);
 				try {
 					image = new BufferedRGB24Image(FrameGrab.getFrame(videoFile, frameNb));
